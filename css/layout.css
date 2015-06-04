@@ -87,3 +87,11 @@
 	right: 0px;
 	background-color: gray;
 }
+
+.danterest-x-closed .danterest-shell-main-nav {
+	width: 0px;
+}
+
+.danterest-x-closed .danterest-shell-main-content {
+	left: 0px;
+}
