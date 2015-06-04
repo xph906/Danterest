@@ -1,0 +1,89 @@
+/*
+ * layout.css
+ * Style file for layout.html
+ * layout.* are just for demo
+ */
+
+.danterest-shell-head, .danterest-shell-logo, .danterest-shell-acct,
+.danterest-shell-search, .danterest-shell-menu, .danterest-shell-setting,
+.danterest-shell-main, .danterest-shell-main-nav, .danterest-shell-main-content,
+.danterest-shell-chat {
+	position: absolute;
+}
+
+.danterest-shell-head {
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 48px;
+	/* background-color is for debuging */
+	background-color: gray;
+}
+
+.danterest-shell-logo {
+	top: 4px;
+	bottom:	4px;
+	left: 10px;
+	width: 40px;
+	height: 40px;
+	background-color: orange;
+}
+
+.danterest-shell-search {
+	top: 4px;
+	bottom:	4px;
+	left: 50px;
+	width: 500px;
+	height: 40px;
+	background-color: green;
+}
+
+.danterest-shell-menu {
+	top: 4px;
+	bottom:	4px;
+	left: 510px;
+	width: 40px;
+	height: 40px;
+	background-color: blue;
+}
+
+.danterest-shell-acct {
+	top: 4px;
+	bottom:	4px;
+	right: 50px;
+	width: 100px;
+	height: 40px;
+	background-color: orange;
+}
+
+.danterest-shell-setting {
+	top: 4px;
+	bottom:	4px;
+	right: 10px;
+	width: 40px;
+	height: 40px;
+	background-color: blue;
+}
+
+.danterest-shell-main {
+	top: 50px;
+	bottom:	50px;
+	left: 0px;
+	right: 0px;
+}
+
+.danterest-shell-main-content, .danterest-shell-main-nav {
+	top: 0;
+	bottom: 0;
+}
+
+.danterest-shell-main-nav {
+	width: 100px;
+	background-color: gray;
+}
+
+.danterest-shell-main-content {
+	left: 110px;
+	right: 0px;
+	background-color: gray;
+}
