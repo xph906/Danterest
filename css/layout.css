@@ -11,6 +11,7 @@
 	position: absolute;
 }
 
+/* Begin shell-head */
 .danterest-shell-head {
 	top: 0;
 	left: 0;
@@ -64,10 +65,12 @@
 	height: 40px;
 	background-color: blue;
 }
+/* End shell-head */
 
+/* Begin shell-main */
 .danterest-shell-main {
 	top: 50px;
-	bottom:	50px;
+	bottom:	5px;
 	left: 0px;
 	right: 0px;
 }
@@ -95,3 +98,15 @@
 .danterest-x-closed .danterest-shell-main-content {
 	left: 0px;
 }
+/* End shell-main */
+
+/* Begin shell-chat */
+.danterest-shell-chat {
+	bottom: 0px;
+	height: 20px;
+	right:	0px;
+	width:	300px;
+	background:	red;
+	z-index:	1;
+}
+/* End shell-chat */
