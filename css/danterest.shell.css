@@ -1,7 +1,9 @@
 /*
- * layout.css
- * Style file for layout.html
- * layout.* are just for demo
+ * danterest.shell.css
+ * Style file for danterest.shell
+ * Since the shell organize features, this style file
+ * controls the each feature container, which holds feature
+ * contents
  */
 
 .danterest-shell-head, .danterest-shell-logo, .danterest-shell-acct,

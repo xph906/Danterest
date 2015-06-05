@@ -32,19 +32,45 @@ danterest.shell = (function () {
           +'   <div class="danterest-shell-main-content"></div>'
           +'</div>'
           +'<div class="danterest-shell-chat"></div>'
+          +'<div class="danterest-shell-foot"></div>'
       },
       stateMap = { $container : null },
       jqueryMap = {},
+      setChatAnchor,
       setJqueryMap, initModule;
   /*** End Module Scope Variables ***/
 
   /*** Begin Utility Methods ***/
   /*** End Utility Methods ***/
 
+  /*** Begin Callbacks ***/
+  
+  /* Begin callback method /setChatAnchor/
+   * Example  : setChatAnchor( 'closed' );
+   * Purpose  : Change the chat component of the anchor
+   * Arguments:
+   *  * position_type - may be 'closed' or 'opened'
+   * Action   :
+   * Changes the URI anchor parameter 'chat' to the requested
+   *  value if possible.
+   * Returns  :
+   * * true  - requested anchor part was updated
+   * * false - requested anchor part was not updated
+   */
+  setChatAnchor = function (position_type) {
+    console.log("in danterest.shell.setChatAnchor: "+position_type);
+  };
+  /*** End Callbacks ***/
+
   /*** Begin DOM Methods ***/
   setJqueryMap = function () {
     $container = stateMap.$container;
     jqueryMap.$container = $container;
+    jqueryMap.$chat_container = $container.find('.danterest-shell-chat');
+    if($container === undefined){
+      throw danterest.util.makeError('Undefined Container',
+            'cannot initiate SHELL module with undefined container');
+    }
   };
   /*** End DOM Methods ***/
 
@@ -52,10 +78,25 @@ danterest.shell = (function () {
   /*** End EVENT Handlers ***/
 
   /*** Begin PUBLIC Methods ***/
+
+  /* Public method /initModule/
+   * Purpose: 
+   *  * render the shell component, that is, the page
+   *  * configure and init other feature components
+   * Arguments:
+   *  * $container - container DOM element
+   * Returns: None
+   */
   initModule = function ( $container ) {
+    // render container
     stateMap.$container = $container;
     stateMap.$container.html(configMap.main_html);
     setJqueryMap();
+
+    // configure & init feature component
+    danterest.chat.configModule(
+      {shell_set_chat_anchor : setChatAnchor});
+    danterest.chat.initModule(jqueryMap.$chat_container);
   };
   return { initModule : initModule };
   /*** End PUBLIC Methods ***/
