@@ -31,7 +31,6 @@ danterest.shell = (function () {
           +'   <div class="danterest-shell-main-nav"></div>'
           +'   <div class="danterest-shell-main-content"></div>'
           +'</div>'
-          +'<div class="danterest-shell-chat"></div>'
           +'<div class="danterest-shell-foot"></div>'
       },
       stateMap = {
@@ -44,14 +43,116 @@ danterest.shell = (function () {
   /*** End Module Scope Variables ***/
 
   /*** Begin Utility Methods ***/
+
+  /* Utility method /copyAnchorMap/
+   * Purpose    : deep copy stateMap.anchor_map
+   * Arguments  : None
+   * Returns    : None
+   */
   copyAnchorMap = function () {
     return $.extend(true, {}, stateMap.anchor_map);
+  };
+
+  /* Utility method /deleteFromAnchorMap/
+   * Purpose    : delete an item and its dependency from 
+   *  stateMap.anchor_map
+   * Arguments  : 
+   *  * key - the key of the item that needs to be deleted
+   *  * map - the map from which items are deleted
+   * Returns    : None
+   */
+  deleteFromAnchorMap = function (key,map) {
+    delete map[key];
+    delete map['_'+key];
+    delete map['_s_'+key];
+  };
+
+  /* Utility method /copyAnAnchorBetweenTwoMaps/
+   * Purpose    : copy an item and its dependency from 
+   *  one anchor map to another
+   * Arguments  : 
+   *  * key - the key of the item that needs to be copied
+   *  * from_map - the source anchor map
+   *  * to_map - the destination anchor map
+   * Returns    :
+   *  * true - succeeded
+   *  * false - failed
+   */
+  copyAnAnchorBetweenTwoMaps = function (key,from_map,to_map) {
+    var _key, _s_key;
+
+    if (from_map === to_map){
+      return false;
+    }
+    _key = '_'+key;
+    _s_key = '_s'+_key;
+
+    if (key in from_map) {
+      to_map[key] = from_map[key];
+    }
+    if (_key in from_map) {
+      to_map[_key] = from_map[_key];
+    }
+    if (_s_key in from_map) {
+      to_map[_s_key] = from_map[_s_key];
+    } 
+    return true;
+  };
+
+  /* Utility method /processChatAnchor/
+   * Purpose    : 
+   *    process `chat` part of anchor when onHashchange event 
+   *    gets fired. This method will NOT modify
+   *    stateMap.anchorMap.chat. If new state has error and needs
+   *    to revert, it returns the map to be reverted.
+   * Arguments  : 
+   *  * new_anchor_map - the new anchor map
+   * Returns    :
+   *  * map - anchor needs to be reverted as specified in map
+   *  * null - everything is fine
+   */
+  processChatAnchor = function (new_anchor_map) {
+    var _s_new_chat, _s_previous_chat, is_ok;
+
+    _s_new_chat = new_anchor_map._s_chat;
+    _s_previous_chat = stateMap.anchor_map._s_chat;
+    if (_s_new_chat === _s_previous_chat ) {
+      // nothing needs to change
+      return null;
+    }
+
+    if (_s_new_chat === undefined ) {
+      danterest.chat.setSliderPosition( 'closed' );
+      return null;
+    }
+
+    switch (new_anchor_map.chat) {
+      case 'opened':
+        is_ok = danterest.chat.setSliderPosition('opened');
+        break;
+      case 'closed':
+        is_ok = danterest.chat.setSliderPosition('closed');
+        break;
+      default:
+        is_ok = false;
+        break;  
+    }
+
+    if (!is_ok) {
+      //begin revert
+      copyAnAnchorBetweenTwoMaps('chat',
+        stateMap.anchor_map,new_anchor_map);  
+      return new_anchor_map;
+    }
+    else {
+      return null;
+    }
   };
   /*** End Utility Methods ***/
 
   /*** Begin Callbacks ***/
   
-  /* Begin callback method /setChatAnchor/
+  /* callback method /setChatAnchor/
    * Example  : setChatAnchor( 'closed' );
    * Purpose  : Change the chat component of the anchor
    * Arguments:
@@ -72,7 +173,7 @@ danterest.shell = (function () {
   setJqueryMap = function () {
     $container = stateMap.$container;
     jqueryMap.$container = $container;
-    jqueryMap.$chat_container = $container.find('.danterest-shell-chat');
+    jqueryMap.$chat_container = $container.find('.danterest-chat');
     if($container === undefined){
       throw danterest.util.makeError('Undefined Container',
             'cannot initiate SHELL module with undefined container');
@@ -125,6 +226,52 @@ danterest.shell = (function () {
   /*** End DOM Methods ***/
 
   /*** Begin EVENT Handlers ***/
+  
+  /* Event handler /onHashchange/
+   * Purpose    : Handles the hashchange event
+   * Arguments  :
+   *  * event - jQuery event object.
+   * Settings   : none
+   * Returns    : false
+   * Actions    :
+   *  * Parses the URI anchor component
+   *  * Compares proposed application state with current
+   *  * Adjust the application only where proposed state
+   *  *   differs from existing and is allowed by anchor schema
+   */
+  onHashchange = function (event) {
+    var previous_anchor_map = copyAnchorMap(stateMap.anchor_map),
+      new_anchor_map, _s_new_chat, _s_previous_chat, revert_anchor_map;
+
+    try {
+      new_anchor_map = $.uriAnchor.makeAnchorMap();
+    }
+    catch (error) {
+      $.uriAnchor.setAnchor(previous_anchor_map, null, true);
+      return false;
+    }
+
+    /*** begin chat anchor ***/
+    _s_new_chat = new_anchor_map._s_chat;
+    _s_previous_chat = stateMap.anchor_map._s_chat;
+    if (_s_new_chat !== _s_previous_chat ) {
+      revert_anchor_map = processChatAnchor(new_anchor_map);
+      if (revert_anchor_map != null) {
+        console.log("revert to previous map: "+revert_anchor_map.chat);
+        $.uriAnchor.setAnchor(revert_anchor_map, null, true);
+        return false;
+      }
+    }
+    /*** end chat anchor ***/
+
+    /*** begin other anchor ***/
+    //TODO: tests are required here
+    /*** end other anchor ***/
+
+    stateMap.anchor_map = new_anchor_map;
+    return true;
+  };
+
   /*** End EVENT Handlers ***/
 
   /*** Begin PUBLIC Methods ***/
@@ -146,7 +293,12 @@ danterest.shell = (function () {
     // configure & init feature component
     danterest.chat.configModule(
       {shell_set_chat_anchor : setChatAnchor});
-    danterest.chat.initModule(jqueryMap.$chat_container);
+    danterest.chat.initModule(jqueryMap.$container);
+
+    //register event handler
+    $(window)
+      .bind('hashchange',onHashchange)
+      .trigger('hashchange');
   };
   return { initModule : initModule };
   /*** End PUBLIC Methods ***/

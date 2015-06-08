@@ -19,36 +19,57 @@
 danterest.chat = (function () {
 	/*** Begin Module Scope Variables ***/
   var configMap = {
-      settable_map : {
-        slider_open_time    : true,
-        slider_close_time   : true,
-        slider_opened_em    : true,
-        slider_closed_em    : true,
-        slider_opened_title : true,
-        slider_closed_title : true,
+    main_html : String()
+      +'<div class="danterest-chat">'
+      + '<div class="danterest-chat-head">'
+      + '  <div class="danterest-chat-head-toggle">+</div>'
+      + '  <div class="danterest-chat-head-title">Chat</div>'
+      + '</div>'
+      + '<div class="danterest-chat-closer">X</div>'
+      + '<div class="danterest-chat-sizer">'
+      + '  <div class="danterest-chat-msg">Msg....</div>'
+      + '  <div class="danterest-chat-box">'
+      + '    <input type="text"/>'
+      + '    <div>Send</div> '
+      + '  </div>   '
+      + '</div>'
+      +'</div>',
 
-        chat_model      : true,
-        people_model    : true,
-        shell_set_chat_anchor : true
-      },
+    settable_map : {
+      slider_open_time    : true,
+      slider_close_time   : true,
+      slider_opened_em    : true,
+      slider_closed_em    : true,
+      slider_opened_title : true,
+      slider_closed_title : true,
 
-      slider_open_time     : 250,
-      slider_close_time    : 250,
-      slider_opened_em     : 18,
-      slider_closed_em     : 2,
-      slider_opened_title  : 'Tap to close',
-      slider_closed_title  : 'Tap to open',
-      slider_opened_min_em : 10,
-      window_height_min_em : 20,
-
-      shell_set_chat_anchor : null
+      chat_model      : true,
+      people_model    : true,
+      shell_set_chat_anchor : true
     },
+
+    slider_open_time     : 250,
+    slider_close_time    : 250,
+    slider_opened_em     : 18,
+    slider_closed_em     : 2,
+    slider_opened_title  : 'Tap to close',
+    slider_closed_title  : 'Tap to open',
+    slider_opened_min_em : 10,
+    window_height_min_em : 20,
+
+    shell_set_chat_anchor : null
+  },
     stateMap = {
       $container : null,
-      position_type : 'closed'
+      $slider : null,
+      position_type : 'closed',
+      px_per_em : 0,
+      slider_closed_px : 0,
+      slider_opened_px : 0
     },
+
     jqueryMap = {},
-    setJqueryMap, setSliderPosition,
+    setJqueryMap, setSliderPosition, setPxSizes,
     onTapToggle,
     configureModule, initModule;
   /*** End Module Scope Variables ***/
@@ -66,8 +87,47 @@ danterest.chat = (function () {
   setJqueryMap = function () {
     jqueryMap = {
       $container : stateMap.$container,
+      $slider : stateMap.$slider,
+      $head   : stateMap.$slider.find( '.danterest-chat-head' ),
+      $toggle : stateMap.$slider.find( '.danterest-chat-head-toggle' ),
+      $title  : stateMap.$slider.find( '.danterest-chat-head-title' ),
+      $sizer  : stateMap.$slider.find( '.danterest-chat-sizer' ),
+      $msg   : stateMap.$slider.find( '.danterest-chat-msg' ),
+      $box    : stateMap.$slider.find( '.danterest-chat-box' ),
+      $input  : stateMap.$slider.find( '.danterest-chat-input input[type=text]'),
       $window : $(window)
     };
+  };
+
+  /* DOM method /setPxSizes/
+   * Purpose: set `slider_XX_px` in stateMap based on 
+   *    current window size.
+   * Action: Changes stateMap
+   * Arguments: None
+   * Returns: None
+   */
+  setPxSizes = function () {
+    var px_per_em, window_height_em, opened_height_em;
+
+    px_per_em = danterest.util_b.
+      getEmSize(jqueryMap.$slider.get(0));
+    window_height_em = Math.floor(
+      jqueryMap.$window.height() / px_per_em) + 0.5;
+
+    opened_height_em =
+      window_height_em > configMap.window_height_min_em
+        ? configMap.slider_opened_em
+        : configMap.slider_opened_min_em;
+
+    jqueryMap.$sizer.css({
+      height : (opened_height_em - 2) * px_per_em
+    });
+
+    stateMap.px_per_em = px_per_em;
+    stateMap.slider_closed_px = 
+      configMap.slider_closed_em * px_per_em;
+    stateMap.slider_opened_px = 
+      opened_height_em * px_per_em;
   };
 
   /* DOM & Public method /setSliderPosition/
@@ -81,40 +141,43 @@ danterest.chat = (function () {
    *  * false - failed
    */
   setSliderPosition = function (position_type, callback) {
-    var height_px, animation_time, slider_title;
+    var height_px, animation_time, slider_title, px_per_em,
+      toggle_text;
     if (position_type === stateMap.$position_type ){
-      return false;
+      return true;
     }
 
     switch (position_type){
       case 'opened' :
-        height_px =
-          danterest.util_b.getEmSize(configMap.slider_opened_em);
+        height_px = stateMap.slider_opened_px;
         animation_time = configMap.slider_open_time;
         slider_title = configMap.slider_opened_title;
+        toggle_text = "=";
         break;
       case 'closed' :
-        height_px =
-          danterest.util_b.getEmSize(configMap.slider_closed_em);
+        height_px = stateMap.slider_closed_px;
         animation_time = configMap.slider_close_time;
         slider_title = configMap.slider_closed_title;
+        toggle_text = "+";
         break;
       case 'hidden' :
         height_px = 0;
         slider_title = '';
         animation_time = configMap.slider_close_time;
+        toggle_text = "+";
         break;
       default : return false;
     }
 
     stateMap.position_type = 'sliding...';
-    jqueryMap.$container.animate(
+    jqueryMap.$slider.animate(
       {height : height_px}, animation_time,
       function () {
-        jqueryMap.$container.prop('title',slider_title);
+        jqueryMap.$toggle.prop('title',slider_title);
+        jqueryMap.$toggle.text( toggle_text);
         stateMap.position_type = position_type;
         if (callback) {
-          callback(jqueryMap.$container);
+          callback(jqueryMap.$slider);
         }
       }
     );
@@ -176,18 +239,22 @@ danterest.chat = (function () {
             'cannot initiate CHAT module with undefined container');
     }
     //render chat module
+    $container.append(configMap.main_html);
     stateMap.$container = $container;
+    stateMap.$slider = $container.find( '.danterest-chat' );
     stateMap.position_type = 'closed';
     setJqueryMap();
+    setPxSizes();
 
     //register event listener
-    stateMap.$container.bind('utap', onTapToggle);
+    jqueryMap.$head.bind('utap', onTapToggle);
     //stateMap.$container.click(onTapToggle);
   };
   /*** End PUBLIC Methods ***/
 
   return {
     configModule : configModule,
-    initModule : initModule
+    initModule : initModule,
+    setSliderPosition : setSliderPosition
   };
 }());

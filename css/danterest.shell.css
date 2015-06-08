@@ -9,7 +9,7 @@
 .danterest-shell-head, .danterest-shell-logo, .danterest-shell-acct,
 .danterest-shell-search, .danterest-shell-menu, .danterest-shell-setting,
 .danterest-shell-main, .danterest-shell-main-nav, .danterest-shell-main-content,
-.danterest-shell-chat, .danterest-shell-foot {
+.danterest-shell-foot {
 	position: absolute;
 }
 
@@ -101,17 +101,6 @@
 	left: 0px;
 }
 /* End shell-main */
-
-/* Begin shell-chat */
-.danterest-shell-chat {
-	bottom: 0px;
-	height: 20px;
-	right:	0px;
-	width:	300px;
-	background:	red;
-	z-index:	1;
-}
-/* End shell-chat */
 
 /* Begin shell-foot */
 .danterest-shell-foot {
