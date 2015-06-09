@@ -17,11 +17,13 @@ danterest.model = (function () {
     configMap = { anon_id : 'a0' },
     stateMap = {
       anon_user : null,
+      cid_serial : 0,
       user : null,
       people_cid_map : {},
       people_db : TAFFY()
     },
     isFakeData = true,
+    makeCid, clearPeopleDb, completeLogin, removePerson,
     personProto, makePerson, people, initModule;
 
   personProto = {
@@ -93,7 +95,7 @@ danterest.model = (function () {
   };
 
   return {
-    initModule initModule,
+    initModule : initModule,
     people : people
   };
 
