@@ -16,6 +16,7 @@
 
 var danterest = (function () {
   var initModule = function ($container){
+    danterest.model.initModule();
     danterest.shell.initModule($container);
   };
   return { initModule : initModule };

@@ -100,8 +100,8 @@ danterest.chat = (function () {
   };
 
   /* DOM method /setPxSizes/
-   * Purpose: set `slider_XX_px` in stateMap based on 
-   *    current window size.
+   * Purpose: set `slider_XX_px` and height of `jQueryMap.$sizer`
+   *    in stateMap based on current window size.
    * Action: Changes stateMap
    * Arguments: None
    * Returns: None
