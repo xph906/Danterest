@@ -21,11 +21,13 @@ danterest.shell = (function () {
   var configMap = {
         main_html : String()
           +'<div class="danterest-shell-head">'
-          +'  <div class="danterest-shell-logo"></div>'
-          +'  <div class="danterest-shell-search"></div>'
-          +'  <div class="danterest-shell-menu"></div>'
-          +'  <div class="danterest-shell-acct"></div>'
-          +'  <div class="danterest-shell-setting"></div>'
+          +'  <div class="danterest-shell-head-logo">'
+          +'    <h1> D </h1>'
+          +'  </div>'
+          +'  <div class="danterest-shell-head-search"></div>'
+          +'  <div class="danterest-shell-head-menu"></div>'
+          +'  <div class="danterest-shell-head-acct"></div>'
+          +'  <div class="danterest-shell-head-setting"></div>'
           +'</div>'
           +'<div class="danterest-shell-main">'
           +'   <div class="danterest-shell-main-nav"></div>'
@@ -39,6 +41,7 @@ danterest.shell = (function () {
       },
       jqueryMap = {},
       setChatAnchor,
+      onHashchange, onTapAcct,
       setJqueryMap, initModule;
   /*** End Module Scope Variables ***/
 
@@ -174,6 +177,8 @@ danterest.shell = (function () {
     $container = stateMap.$container;
     jqueryMap.$container = $container;
     jqueryMap.$chat_container = $container.find('.danterest-chat');
+    jqueryMap.$acct = $container.find('.danterest-shell-head-acct');
+    jqueryMap.$nav = $container.find('.danterest-shell-main-nav');
     if($container === undefined){
       throw danterest.util.makeError('Undefined Container',
             'cannot initiate SHELL module with undefined container');
@@ -272,6 +277,35 @@ danterest.shell = (function () {
     return true;
   };
 
+  /* Event handler /onTapAcct/
+   * Purpose: Handles the click event for account div
+   *  TODO: this handler needs to be rewritten.
+   */  
+  onTapAcct = function (event) {
+    var user_name, user = danterest.model.people.get_user();
+    if (user.get_is_anon()) {
+      user_name = prompt('Please sign-in');
+      danterest.model.people.login({
+        name : user_name,
+        email : user_name+'@gmail.com',
+        role : 'teacher'
+      });
+      jqueryMap.$acct.text('...processing...');
+    } 
+    else {
+      danterest.model.people.logout();
+    }
+    return false;
+  };
+
+  onLogin = function (event, login_user) {
+    jqueryMap.$acct.text(login_user.name);
+  };
+
+  onLogout = function (event, login_user) {
+    jqueryMap.$acct.text("please sign-in");
+  };
+
   /*** End EVENT Handlers ***/
 
   /*** Begin PUBLIC Methods ***/
@@ -296,6 +330,12 @@ danterest.shell = (function () {
     danterest.chat.initModule(jqueryMap.$container);
 
     //register event handler
+    $.gevent.subscribe($container,'danterest-login',onLogin);
+    $.gevent.subscribe($container,'danterest-logout',onLogout);
+    jqueryMap.$acct
+      .text(' please sign-in')
+      .bind('utap',onTapAcct);
+
     $(window)
       .bind('hashchange',onHashchange)
       .trigger('hashchange');

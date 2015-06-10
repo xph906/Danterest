@@ -6,8 +6,8 @@
  * contents
  */
 
-.danterest-shell-head, .danterest-shell-logo, .danterest-shell-acct,
-.danterest-shell-search, .danterest-shell-menu, .danterest-shell-setting,
+.danterest-shell-head, .danterest-shell-head-logo, .danterest-shell-head-acct,
+.danterest-shell-head-search, .danterest-shell-head-menu, .danterest-shell-head-setting,
 .danterest-shell-main, .danterest-shell-main-nav, .danterest-shell-main-content,
 .danterest-shell-foot {
 	position: absolute;
@@ -23,7 +23,7 @@
 	background-color: gray;
 }
 
-.danterest-shell-logo {
+.danterest-shell-head-logo {
 	top: 4px;
 	bottom:	4px;
 	left: 10px;
@@ -32,7 +32,7 @@
 	background-color: orange;
 }
 
-.danterest-shell-search {
+.danterest-shell-head-search {
 	top: 4px;
 	bottom:	4px;
 	left: 50px;
@@ -41,7 +41,7 @@
 	background-color: green;
 }
 
-.danterest-shell-menu {
+.danterest-shell-head-menu {
 	top: 4px;
 	bottom:	4px;
 	left: 510px;
@@ -50,16 +50,20 @@
 	background-color: blue;
 }
 
-.danterest-shell-acct {
-	top: 4px;
-	bottom:	4px;
-	right: 50px;
-	width: 100px;
-	height: 40px;
-	background-color: orange;
+.danterest-shell-head-acct {
+	top : 4px;
+	right :0;
+	width : 210px;
+	height : 32px;
+	line-height : 32px;
+	background : #888;
+	color : #fff;
+	text-align : center;
+	cursor : pointer;
+	overflow : hidden;
 }
 
-.danterest-shell-setting {
+.danterest-shell-head-setting {
 	top: 4px;
 	bottom:	4px;
 	right: 10px;

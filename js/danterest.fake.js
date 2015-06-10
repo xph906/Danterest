@@ -18,7 +18,8 @@ danterest.fake = (function () {
       offline_state : "offline",
       away_state : "away",
       teacher_role : "teacher",
-      student_role : "student"
+      student_role : "student",
+      parent_role : "parent"
     },
     getPeopleList,
     peopleList, fakeIdSerial, makeFakeId, mockSio;
@@ -64,8 +65,37 @@ danterest.fake = (function () {
     return peopleList;
   };
 
+  mockSio = (function (){
+    var on_sio, emit_sio, callback_map = {};
+
+    on_sio = function (msg_type, callback) {
+      callback_map[msg_type] = callback;
+    };
+
+    emit_sio = function (msg_type, data) {
+      if (msg_type === "userlogin") {
+        if (callback_map.userupdate){
+          console.log("receive userlogin signal in Fake Module");
+          setTimeout( function () {
+            callback_map.userupdate([{
+              _id : makeFakeId(),
+              name : data.name,
+              email : data.email,
+              role  : data.role }]);
+          }, 3000);
+        }
+      }
+      else if (msg_type === "userlogout"){
+        console.log("receive userlogout signal in Fake Module");
+      }
+    };
+
+    return { emit : emit_sio, on : on_sio };
+  }());
+
   return {
-    getPeopleList : getPeopleList
+    getPeopleList : getPeopleList,
+    mockSio : mockSio
   };
  
 }());
