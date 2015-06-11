@@ -19,17 +19,17 @@ danterest.model = (function () {
       anon_user : null,
       cid_serial : 0,
       user : null,
-      people_cid_map : {},
-      people_db : TAFFY(),
-      visibility : "visible", /*visible, invisible*/
-      status : "anonymous" /*anonymous, progressing, login*/
+      friend_cid_map : {},
+      friend_db : TAFFY(),
+      default_visibility : "visible",
+      login_status : "anonymous" /*anonymous, progressing, login*/
     },
     isFakeData = true,
-    makeCid, clearPeopleDb, completeLogin, removePerson,
-    friendProto, makeFriend, people, initModule,
+    makeCid, clearFriendDb, completeLogin, removeFriend,
+    personProto, makePerson, people, initModule,
     sio;
 
-  friendProto = {
+  personProto = {
     get_is_user : function () {
       return this.cid === stateMap.user.cid;
     },
@@ -38,42 +38,45 @@ danterest.model = (function () {
     }
   };
 
-  /* Create Friend object and add it to client-side
-   * database 
-   * Friend Properties:
+  /* Create Person object
+   *  The person can be 
+   *    1). the user
+   *    2). anonymous user
+   *    3). friend, which will be added to client-side database
+   * Person Properties:
    *  * id
    *  * cid
    *  * name
    *  * email
-   *  * role
+   *  * role : teacher, student, parent
+   *  * visibility : visible, invisible
+   *  * status: online, offline, invisible
    */
-  makeFriend = function (person_map) {
-    var person,
-      cid = person_map.cid,
-      id = person_map.id,
-      name = person_map.name,
-      email = person_map.email,
-      //status = (person_map.state === undefined ?
-      //  "offline" : person_map.status ),
-      role = person_map.role; /* teacher, student, parent */
+  makePerson = function (person_map, is_friend) {
+    var person, cid = person_map.cid,
+      id = person_map.id, name = person_map.name;
 
     if (cid === undefined || !name ) {
-      throw makeError("Bad Person Info", 
+      console.log(cid+" "+name)
+      throw danterest.util.makeError("Bad Person Info", 
         "Client ID and name are required", null);
     }
-
+ 
     person = Object.create(personProto);
-    person.cid = cid;
     person.name = name;
-    person.email = email;
-    person.role = role;
+    person.email = person_map.email;
+    person.role = person_map.role;
+    person.visibility = person_map.visibility;
+    person.status = person_map.status;
+    if (id) { person.id = id; }
 
-    if (id) {
-      person.id = id;
+    if ( is_friend) {
+      stateMap.friend_cid_map[cid] = person;
+      stateMap.friend_db.insert(person);     
     }
-
-    stateMap.people_cid_map[cid] = person;
-    stateMap.people_db.insert(person);
+    else{
+      console.log("makePerson creates a non-friend");
+    }
     return person;
   };
 
@@ -83,14 +86,9 @@ danterest.model = (function () {
   };
 
   /* Remove all friend objects */
-  clearPeopleDb = function () {
-    var user = satteMap.user;
-    stateMap.people_db = TAFFY();
-    stateMap.people_cid_map = {};
-    if (user) {
-      stateMap.people_db.insert(user);
-      stateMap.people_cid_map[user.cid] = user;
-    }
+  clearFriendDb = function () {
+    stateMap.friend_db = TAFFY();
+    stateMap.friend_cid_map = {};
   };
 
   /* This callback is called when backend sends confirmation
@@ -99,46 +97,65 @@ danterest.model = (function () {
    *  1. update stateMap.user
    *  2. send login events to subscribers
    */
-  completeLogin = function ( user_list ) {
-    var user_map = user_list[0] ;
+  completeLogin = function ( user, friend_list ) {
+    var friend_map, user_map = user;
     //TODO: confirm user_map is current user!
     console.log("in Model completeLogin completeLogin");
-    delete stateMap.people_cid_map[user_map.cid];
+    delete stateMap.friend_cid_map[user_map.cid];
+    //TODO: delete the user from friendDb
     stateMap.user.cid = user_map._id;
     stateMap.user.id = user_map._id;
     stateMap.user.role = user_map.role;
     stateMap.user.email = user_map.email;
     stateMap.user.name = user_map.name;
-    stateMap.people_cid_map[ user_map._id ] = stateMap.user;
-    stateMap.status = "login";
+    stateMap.login_status = "login";
+ 
+    for (i=0; i<friend_list.length; i++){
+      friend_map = friend_list[i];
+      makePerson({
+        cid : friend_map._id,
+        id : friend_map._id,
+        email : friend_map.name.toLowerCase()+'@gmail.com',
+        name : friend_map.name,
+        role : friend_map.role,
+        status : friend_map.status
+      }, true);
+    }
 
     $.gevent.publish('danterest-login',[stateMap.user]);
   };
 
-  removePerson = function (person) {
-    console.log("undone: removePerson: "+person.name);
+  removeFriend = function (friend) {
+    //TODO:
+    console.log("undone: removePerson: "+friend.name);
     return true;
   }
 
   /*
-   * Begin People Module
+   * Begin friends Module
    *  * 1. get_by_cid(id)
-   *  * 2. get_db()
+   *  * 2. get_friend_db()
    *  * 3. get_user()
    *  * 4. login({name})
    *  * 5. logout(name)
    *  * 6. change_visibility("new_visibility")
    */
   people = (function () {
-    var get_by_cid, get_db, get_user,
+    var get_by_cid, get_friend_db, get_user,
       login, logout, change_visibility;
 
     get_by_cid = function(cid){
-      return stateMap.people_cid_map[cid];
+      if (cid === configMap.anon_id) {
+        return configMap.anon_user;
+      }
+      else if (cid === stateMap.user.cid) {
+        return stateMap.user;
+      }
+      return stateMap.friend_cid_map[cid];
     };
 
-    get_db = function () {
-      return stateMap.people_db;
+    get_friend_db = function () {
+      return stateMap.friend_db;
     };
 
     get_user = function () {
@@ -150,33 +167,33 @@ danterest.model = (function () {
         cid : makeCid(),
         name : user_map.name,
         email : user_map.email,
-        role  : user_map.role
-      });
+        role  : user_map.role,
+        visibility : stateMap.default_visibility,
+        status : "online"
+      }, false);
+      stateMap.login_status = "processing";
 
       /* Register callback completeLogin for backend notification */
       sio.on('userupdate', completeLogin);
-      stateMap.status = "processing";
       /* Send `adduser` msg to backend */
-      sio.emit('userlogin', {
-        cid : stateMap.user.cid,
-        name : stateMap.user.name,
-        email : stateMap.user.email
-      });
+      sio.emit('userlogin', stateMap.user);
     };
 
     logout = function () {
-      var is_removed, user = stateMap.user;
+      var user = stateMap.user;
+      $.gevent.publish("danterest-logout",[user]);
 
-      is_removed = removePerson(user);
+      clearFriendDb();
+      stateMap.login_status = "anonymous";
+      stateMap.user = stateMap.anon_user;  
+
       sio.emit('userlogout', {
         cid : user.cid,
         name : user.name,
         email : user.email
       });
-      stateMap.user = stateMap.anon_user;
-      stateMap.status = "anonymous";
-      $.gevent.publish("danterest-logout",[user]);
-      return is_removed;
+
+      return true;
     };
 
     change_visibility = function (new_visibility) {
@@ -185,7 +202,7 @@ danterest.model = (function () {
 
     return {
       get_by_cid : get_by_cid,
-      get_db : get_db,
+      get_friend_db : get_friend_db,
       get_user : get_user,
       login : login,
       logout : logout
@@ -195,7 +212,7 @@ danterest.model = (function () {
   /* End People Module */
 
   initModule = function () {
-    var i, people_list, person_map;
+    var i, friend_list, friend_map;
     stateMap.anon_user = makePerson({
       cid : configMap.anon_id,
       id : configMap.anon_id,
@@ -205,21 +222,6 @@ danterest.model = (function () {
 
     sio = isFakeData ?
         danterest.fake.mockSio : danterest.data.getSio();
-
-    if (isFakeData) {
-      people_list = danterest.fake.getPeopleList();
-      for (i=0; i<people_list.length; i++){
-        person_map = people_list[i];
-        makePerson({
-          cid : person_map._id,
-          id : person_map._id,
-          email : person_map.name.toLowerCase()+'@gmail.com',
-          name : person_map.name,
-          role : person_map.role,
-          status : person_map.status
-        });
-      }
-    }
   };
 
   return {

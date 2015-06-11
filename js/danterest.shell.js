@@ -288,7 +288,9 @@ danterest.shell = (function () {
       danterest.model.people.login({
         name : user_name,
         email : user_name+'@gmail.com',
-        role : 'teacher'
+        role : 'teacher',
+        status : 'online',
+        visibility : 'visible'
       });
       jqueryMap.$acct.text('...processing...');
     } 
