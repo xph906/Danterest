@@ -25,7 +25,7 @@ danterest.model = (function () {
       login_status : "anonymous" /*anonymous, progressing, login*/
     },
     isFakeData = true,
-    makeCid, clearFriendDb, completeLogin, removeFriend,
+    makeCid, clearFriendDb, removeFriend,
     personProto, makePerson, people, initModule,
     sio;
 
@@ -91,39 +91,12 @@ danterest.model = (function () {
     stateMap.friend_cid_map = {};
   };
 
-  /* This callback is called when backend sends confirmation
-   *    that the user has logged in.
-   * Action:
-   *  1. update stateMap.user
-   *  2. send login events to subscribers
-   */
-  completeLogin = function ( user, friend_list ) {
-    var friend_map, user_map = user;
-    //TODO: confirm user_map is current user!
-    console.log("in Model completeLogin completeLogin");
-    delete stateMap.friend_cid_map[user_map.cid];
-    //TODO: delete the user from friendDb
-    stateMap.user.cid = user_map._id;
-    stateMap.user.id = user_map._id;
-    stateMap.user.role = user_map.role;
-    stateMap.user.email = user_map.email;
-    stateMap.user.name = user_map.name;
-    stateMap.login_status = "login";
- 
-    for (i=0; i<friend_list.length; i++){
-      friend_map = friend_list[i];
-      makePerson({
-        cid : friend_map._id,
-        id : friend_map._id,
-        email : friend_map.name.toLowerCase()+'@gmail.com',
-        name : friend_map.name,
-        role : friend_map.role,
-        status : friend_map.status
-      }, true);
-    }
-
-    $.gevent.publish('danterest-login',[stateMap.user]);
-  };
+  showFriendListFromDb = function () {
+    stateMap.friend_db().each( 
+      function (person,index) {
+        console.log("Friend: "+person.name)
+      });
+    };
 
   removeFriend = function (friend) {
     //TODO:
@@ -139,10 +112,11 @@ danterest.model = (function () {
    *  * 4. login({name})
    *  * 5. logout(name)
    *  * 6. change_visibility("new_visibility")
+   *  * 7. completeLogin
    */
   people = (function () {
     var get_by_cid, get_friend_db, get_user,
-      login, logout, change_visibility;
+      login, logout, change_visibility,complete_login;
 
     get_by_cid = function(cid){
       if (cid === configMap.anon_id) {
@@ -174,7 +148,7 @@ danterest.model = (function () {
       stateMap.login_status = "processing";
 
       /* Register callback completeLogin for backend notification */
-      sio.on('userupdate', completeLogin);
+      sio.on('userupdate', complete_login);
       /* Send `adduser` msg to backend */
       sio.emit('userlogin', stateMap.user);
     };
@@ -193,11 +167,49 @@ danterest.model = (function () {
         email : user.email
       });
 
+      console.log("friend list:");
+      showFriendListFromDb();
+
       return true;
     };
 
     change_visibility = function (new_visibility) {
 
+    };
+
+    /* This callback is called when backend sends confirmation
+     *    that the user has logged in.
+     * Action:
+     *  1. update stateMap.user
+     *  2. send login events to subscribers
+     */
+    complete_login = function ( user, friend_list ) {
+      var friend_map, user_map = user;
+      //TODO: confirm user_map is current user!
+      console.log("in Model completeLogin completeLogin");
+      delete stateMap.friend_cid_map[user_map.cid];
+      //TODO: delete the user from friendDb
+      stateMap.user.cid = user_map._id;
+      stateMap.user.id = user_map._id;
+      stateMap.user.role = user_map.role;
+      stateMap.user.email = user_map.email;
+      stateMap.user.name = user_map.name;
+      stateMap.login_status = "login";
+   
+      for (i=0; i<friend_list.length; i++){
+        friend_map = friend_list[i];
+        makePerson({
+          cid : friend_map._id,
+          id : friend_map._id,
+          email : friend_map.name.toLowerCase()+'@gmail.com',
+          name : friend_map.name,
+          role : friend_map.role,
+          status : friend_map.status
+        }, true);
+      }
+      console.log("friend list:");
+      showFriendListFromDb();
+      $.gevent.publish('danterest-login',[stateMap.user]);
     };
 
     return {
